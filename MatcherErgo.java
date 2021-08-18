@@ -1,4 +1,3 @@
-package rootpack;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -8,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Set;
 import org.apache.commons.codec.language.DoubleMetaphone;
-import rootpack.Address;
+
 
 import com.wcohen.secondstring.Jaro;
 import com.wcohen.secondstring.StringWrapper;
@@ -17,17 +16,16 @@ import me.xdrop.fuzzywuzzy.FuzzySearch;
 
 
 
-class FileIO4
+class FileIO3
 {
 	public void writeToFile(String s1, String s2, String s3, String s4)
 	{
 		
 		try
 		{
-			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa_output.tsv",true);
-			FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/test_output.tsv",true);
-			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_500s.tsv",true);
-			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_with_percentage.tsv",true);
+			
+			FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/Dedupe Motor/motor_data_pairs_output.csv",true);
+			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/Dedupe Motor/test_output.csv",true);
 			myWriter.write(s1+'\t'+s2+'\t'+s3+'\t'+s4+'\n');
 			//System.out.println("Wrote to file");
 			myWriter.close();
@@ -40,7 +38,7 @@ class FileIO4
 	      
 	}
 }
-class Similarity4
+class Similarity3
 {
 	
 	public static String preprocess_word(String name,String s)
@@ -261,15 +259,10 @@ class Similarity4
 	public double findSim(String s1, String s2)
 	{
 		double tmp=-1;
-		//System.out.println("OK");
-		//System.out.println(s1.toLowerCase());
-		//System.out.println(s2.toLowerCase());
-		if ((s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na")||s1.toLowerCase().equals("- -")||s2.toLowerCase().equals("- -")))
-		{
-			//System.out.println("Returning -0.5");
+		System.out.println("OK");
+		System.out.println(s2.toLowerCase());
+		if(s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na")||s1.toLowerCase().equals("abc@abc.com")||s2.toLowerCase().equals("abc@abc.com")||s1.toLowerCase().equals("na@gmail.com")||s2.toLowerCase().equals("na@gmail.com")||s1.toLowerCase().equals("abc@gmail.com")||s2.toLowerCase().equals("abc@gmail.com"))
 			return -0.5;
-		}
-			
 		String[] l1 = s1.split(";");
 		String[] l2 = s2.split(";");
 		//For every string in the field, separated by ; find jaro and return the max of them
@@ -291,11 +284,11 @@ class Similarity4
 	public double findSim_phone(String s1, String s2)
 	{
 		double tmp=-1;
-		if (s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na")||s1.toLowerCase().equals("- -")||s2.toLowerCase().equals("- -"))
+		if (s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na"))
 			return -0.5;
 		//Phone numbers are separated by comma
-		String[] l1 = s1.replaceAll("\\s", "").split(",");
-		String[] l2 = s2.replaceAll("\\s", "").split(",");
+		String[] l1 = s1.split(",");
+		String[] l2 = s2.split(",");
 		//For every string in the field, separated by ',' find jaro and return the max of them
 		for (String str1: l1)
 		{
@@ -379,23 +372,15 @@ class Similarity4
 
 
 
-public class TestCheck3
+public class MatcherErgo
 {
-	public static double normalizeFinalScore(double final_score,double old_min,double old_max,double new_min,double new_max)
-	{
-		double old_range = (old_max - old_min);  
-		double new_range = (new_max - new_min);  
-		double new_value = (((final_score - old_min) * new_range) / old_range) + new_min;
-		//System.out.println(new_value);
-		return(new_value);
-	}
 	//Yash: Method to normalize scores between 4 and 9 (PM range) when one of the strong ID attributes mismatch
 	public static double normalizeForPM(double score,double min,double max)
 	{
 		//Find the normalized score between 0 and 1
 		double norm_score = (score-min)/(max-min);
-		//Multiply it with 9 (partial match upper limit)
-		double new_score = norm_score*9;
+		//Multiply it with 7 (partial match upper limit)
+		double new_score = norm_score*7;
 		//Return it
 		return(new_score);
 	}
@@ -429,20 +414,9 @@ public class TestCheck3
 	public static void main(String[] args)
 	throws Exception
 	{
-		int coeff_id=0,coeff_address2,coeff_email,coeff_name=0,coeff_fname=0,coeff_mname=0,coeff_address,coeff_contact, coeff_pan,coeff_passport, coeff_ckyc, coeff_voterid, coeff_dob, coeff_gender,numlines=0, acc=0;
-		double final_score=0,mismatch_cnt=0;
-		double sim_array[]=new double[50];
-		double coeff_array[]=new double[50];
-		//max_fs and min_fs are the maximum and minimum values of final_score; minPM and maxPM are the lower and upper limits of PM; norm_score is the normalized score
-		double max_fs=33, min_fs=-16,minPM=2,maxPM=7,norm_score=0;
-		//The threshold defined by the team to calculate the percentages (0 to 50 is no match, 50 to 75 is partial match, etc.)
-		double thr1=0,thr2=50,thr3=75,thr4=100;
-	 
-		/*User to specify relaxed threshold for EM, for name,dob,and gender match*/
-		double relaxed_PM_threshold=4;
 		
-		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa.tsv"));  
-		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/test.csv"));
+		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/Dedupe Motor/motor_data_pairs.csv"));  
+		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/Dedupe Motor/test.csv"));
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/final_test_set.csv"));
 		
 		String line="";
@@ -450,87 +424,86 @@ public class TestCheck3
 		
 		String final_label="X";
 		
-		//Create output file to write special cases (not required in main implementation)
-		//FileWriter myWriter2 = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_nonmatch500.tsv");
-		FileWriter myWriter2 = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_nomatch.tsv",true);
-		//FileWriter myWriter2 = new FileWriter("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa_nonmatch.tsv");
+		
+
+		
 		while ((line = br.readLine()) != null)   //returns a Boolean value  
 		//while (sc.hasNext())  //returns a boolean value  
 		{  
-			System.out.println(line);
+			int coeff_id=0,coeff_address2,coeff_email,coeff_name=0,coeff_fname=0,coeff_mname=0,coeff_address,coeff_contact, coeff_pan,coeff_passport, coeff_ckyc, coeff_voterid, coeff_dob=0, coeff_gender=0,numlines=0, acc=0;
+			double final_score=0;
+			double sim_array[]=new double[50];
+			double coeff_array[]=new double[50];
+			double max=33, min=-16;
+			
 			linecount+=1;
-			//System.out.println(linecount);
-			String[] l = line.split("\t"); 
-			//System.out.println(l[19]);
+			//System.out.println(line);
 			
-			String source=l[0];
-			
-		    
-			String unique_ID_left=l[1];
-		    String dob_left=l[2];	
-		    String gender_left=l[3];	
-		    String pan_left=l[4];	
-		    String aadhar_left=l[5];
-		    String passport_left=l[6];
-		    String ckyc_left=l[7];
-		    String voterid_left=l[8];
-		    String drivinglicence_left=l[9];
-		    String eia_left=l[10];
-		    String fullname_left=l[11];
-		    String fatherfullname_left=l[12];
-		    String motherfullname_left=l[13];
-		    String contactnumbers_left=l[14];
-		    String email_left=l[15];
-		    String addresses_left=l[16];
-		    String unique_ID_right=l[17];
-		    String dob_right=l[18];
-		    String gender_right=l[19];
-		    String pan_right=l[20];
-		    String aadhar_right=l[21];
-		    String passport_right=l[22];
-		    String ckyc_right=l[23];
-		    String voterid_right=l[24];
-		    String drivinglicence_right	=l[25];
-		    String eia_right=l[26];
-		    String fullname_right=l[27];
-		    String fatherfullname_right=l[28];
-		    String motherfullname_right=l[29];
-		    String contactnumbers_right=l[30];
-		    String email_right=l[31];
-		    String addresses_right=l[32];
-		    String labels=l[33];
-		    
-		    //Find similarity between pairs of attributes
-		    Similarity4 s = new Similarity4();
-		    double namesim = s.findNameSim(fullname_left,fullname_right);
-		    double fnamesim = s.findNameSim(fatherfullname_left,fatherfullname_right);
-		    double mnamesim = s.findNameSim(motherfullname_left,motherfullname_right);
-		    //System.out.println(dob_left);
-		    //System.out.println(dob_right);
-		    double dobsim = s.findSim(dob_left,dob_right);
-		    double gendersim = s.findSim(gender_left,gender_right);
-		    //Updated Address Matcher
-		    double addrsim = Address.findAddSim(addresses_left,addresses_right);
-		    //double addrsim = s.findSim(addresses_left,addresses_right);
-		    double pansim = s.findSim(pan_left,pan_right);
-		    double voteridsim = s.findSim(voterid_left,voterid_right);
-		    double passportsim = s.findSim(passport_left,passport_right);
-		    double ckycsim = s.findSim(ckyc_left,ckyc_right);
-		    double aadhaarsim = s.findSim(aadhar_left,aadhar_right);
-		    double drivinglicencesim = s.findSim(drivinglicence_left,drivinglicence_right);
-		    double eiasim = s.findSim(eia_left,eia_right);
-		    double emailsim = s.findSim(email_left,email_right);
-		    double phsim = s.findSim_phone(contactnumbers_left,contactnumbers_right);
-		    double idsim=0;
-		    double namesim2=0,fnamesim2=0,mnamesim2=0,addrsim2=0,idsim2=0;
-		   //System.out.println(dobsim);
-		   //System.out.println(gendersim);
-		    FileIO4 fio=new FileIO4();
-		    if (dobsim==1 && gendersim==1)
+			String[] l = line.split("\t");
+			//System.out.println(line);
+			if(l.length>30)
+			//String source=l[1];
 			{
+				String unique_ID_left=l[2];
+			    String dob_left=l[3];	
+			    String gender_left=l[4];	
+			    String pan_left=l[5];	
+			    String aadhar_left=l[5];
+			    String fullname_left=l[6];
+			    String contactnumbers_left=l[9];
+			    String email_left=l[10];
+			    String addresses_left=l[11]+l[12];
+			    String unique_ID_right=l[20];
+			    String dob_right=l[21];
+			    String gender_right=l[22];
+			    String pan_right=l[23];
+			    String fullname_right=l[24];
+			    String contactnumbers_right=l[27];
+			    String email_right=l[28];
+			    
+			    String addresses_right=l[29]+l[30];
+			    
+			   
+
+			    
+			   
+			    
+			    
+			    //Find similarity between pairs of attributes
+			    Similarity3 s = new Similarity3();
+			    double namesim = s.findNameSim(fullname_left,fullname_right);
+			    
+			    
+			    double dobsim = s.findSim(dob_left,dob_right);
+			    double gendersim = s.findSim(gender_left,gender_right);
+			    double addrsim = s.findSim(addresses_left,addresses_right);
+			    double pansim = s.findSim(pan_left,pan_right);
+			    
+			    double emailsim = s.findSim(email_left,email_right);
+			    double phsim = s.findSim_phone(contactnumbers_left,contactnumbers_right);
+			    double idsim=0;
+			    double namesim2=0,fnamesim2=0,mnamesim2=0,addrsim2=0,idsim2=0,dobsim2=0,gendersim2=0;
+	
+			    FileIO3 fio=new FileIO3();
+			    
+				
 				//System.out.println("Gender Match");
-				coeff_dob=1;
-				coeff_gender=1;
+			    if(dobsim==1)
+			    	coeff_dob = 1;
+			    else if (dobsim!=-0.5)
+			    {
+			    	dobsim2=1-dobsim;
+			    	coeff_dob = -10;
+			    }
+			    	
+			    if (gendersim==1)
+			    	coeff_gender = 1;
+			    else if (gendersim!=-0.5)
+			    {
+			    	gendersim2=1-gendersim;
+			    	coeff_gender=-10;
+			    }
+			    	
 				/************************************************************/
 				//NAME
 				/***********************************************************/
@@ -589,7 +562,7 @@ public class TestCheck3
 								coeff_name=3;
 							}
 							//If the first name is a single alphabet, and abbreviations and last name match, increase name coefficient and similarity
-							else if ((firstname_left.length()==1||firstname_right.length()==1)&&(Similarity4.doAbbrvMatch(fullname_left, fullname_right)))
+							else if ((firstname_left.length()==1||firstname_right.length()==1)&&(Similarity3.doAbbrvMatch(fullname_left, fullname_right)))
 							{
 								if (lastname_left.equals(lastname_right))
 								{
@@ -598,7 +571,7 @@ public class TestCheck3
 								}
 							}
 							//If the last name is a single alphabet, and abbreviations and first name match, increase name coefficient and similarity
-							else if ((lastname_left.length()==1||lastname_right.length()==1)&&(Similarity4.doAbbrvMatch(fullname_left, fullname_right)))
+							else if ((lastname_left.length()==1||lastname_right.length()==1)&&(Similarity3.doAbbrvMatch(fullname_left, fullname_right)))
 							{
 								if (firstname_left.equals(firstname_right))
 								{
@@ -629,9 +602,7 @@ public class TestCheck3
 					coeff_address=0;*/
 				//Address2 coeff
 				if (addrsim>0.7)	//Same house
-				{
 					coeff_address2=2;
-				}
 				else if (addrsim<=0.7 && addrsim!=-0.5)
 				{
 					addrsim2=1-addrsim;
@@ -649,76 +620,23 @@ public class TestCheck3
 				}
 				else
 					coeff_contact=0;	//Multiple contacts
-				/************************************************************/
-				//FATHER'S NAME
-				/***********************************************************/
 				
-				if (fnamesim>=0.85)
-					coeff_fname=2;	//Same name, different people
-				//If namesim < 0.65, negative
-				else if (fnamesim<0.65 && fnamesim!=-0.5)
-				{
-					fnamesim2=1-fnamesim;
-					coeff_fname=-3;
-				}
-				//If namesim between 0.65 and 0.85
-				else if ((fnamesim>=0.65)&&(fnamesim<0.85))
-				{
-					//If abbreviations are subset of each other, no contribution
-					if (s.doAbbrvMatch(fatherfullname_left,fatherfullname_right))
-						coeff_fname=0;
-					//Else negative
-					else
-					{
-						fnamesim2=1-fnamesim;
-						coeff_fname=-3;
-					}
-						
-				}
-				else
-					coeff_fname=0;
-				/************************************************************/
-				//MOTHER'S NAME
-				/***********************************************************/
-				if (mnamesim>=0.85)
-					coeff_mname=2;	//Same name, different people
-				//If namesim < 0.65, negative
-				else if (mnamesim<0.65 && mnamesim!=-0.5)
-				{	
-					mnamesim2=1-mnamesim;
-					coeff_mname=-3;
-				}
-				//If namesim between 0.65 and 0.85
-				else if ((mnamesim>=0.65)&&(mnamesim<0.85))
-				{
-					//If abbreviations are subset of each other, no contribution
-					if (s.doAbbrvMatch(motherfullname_left,motherfullname_right))
-						coeff_mname=0;
-					//Else negative
-					else
-					{
-						mnamesim2=1-mnamesim;
-						coeff_mname=-3;
-					}
-						
-				}
-				else
-					coeff_mname=0;
+				
 				
 				/************************************************************/
 				//Yash: ID attribute match
 				/***********************************************************/
 				//If any one ID matches, high contribution
-				if(pansim==1 || passportsim==1 || voteridsim==1 || ckycsim==1 || aadhaarsim==1 || drivinglicencesim==1 || eiasim==1)
+				if(pansim==1)
 				{
 					idsim=1;
 					coeff_id=10;	//Strong influence if any ID attribute matches
 					coeff_name=5;	//Yash: Force increase name coefficient
 				}
 				//If no ID attributes are present
-				else if ((pansim==-0.5)&& passportsim==-0.5 && voteridsim==-0.5 && ckycsim==-0.5 && aadhaarsim==-0.5 && drivinglicencesim==-0.5 && eiasim==-0.5)
+				else if(pansim==-0.5)
 				{
-					//System.out.println("HERE1");
+					System.out.println("HERE1");
 					idsim=0;
 					coeff_id=0;
 				}
@@ -728,35 +646,9 @@ public class TestCheck3
 					//Take the strongest ID similarity as idsim (needs to be modified)
 					if(pansim!=-0.5)
 					{
-						//System.out.println("HERE2");
+						System.out.println("HERE2");
 						idsim2=(1-pansim);//Yash
 						coeff_id=-5;
-					}
-					else if(aadhaarsim!=-0.5)
-					{
-						idsim2=(1-aadhaarsim);//Yash
-						coeff_id=-5;
-					}
-					else if(ckycsim!=-0.5)
-					{
-						idsim2=(1-ckycsim);//Yash
-						coeff_id=-5;
-					}
-					else if(drivinglicencesim!=-0.5)
-					{
-						idsim2=(1-drivinglicencesim);//Yash
-						coeff_id=0;	//Multiple driving licences might be there
-					}
-					else if(passportsim!=-0.5)
-					{
-						idsim2=(1-passportsim);//Yash
-						coeff_id=0;	//Multiple passports might be there
-					}
-					
-					else
-					{
-						idsim2=(1-voteridsim);//Yash
-						coeff_id=0;	//Multiple voter IDs might be there
 					}
 					
 				}
@@ -773,42 +665,32 @@ public class TestCheck3
 				else
 					coeff_email=0;
 				
-				/*System.out.println("%%%%");
+				System.out.println("%%%%");
 				System.out.println(namesim);
-				System.out.println(fnamesim);
-				System.out.println(mnamesim);
 				System.out.println(addrsim);
 				System.out.println(idsim);
 				System.out.println(emailsim);
-				System.out.println(phsim);*/
+				System.out.println(phsim);
+				System.out.println(dobsim);
+				System.out.println(gendersim);
+				System.out.println("-----------------");
 				
 				/**************************************************************************************/
 				/*Yash: Calculating final score*/
 				/**************************************************************************************/
 				
 				sim_array[0]=namesim;
-				sim_array[1]=fnamesim;
-				sim_array[2]=mnamesim;
-				sim_array[3]=addrsim;
-				//sim_array[4]=idsim;
-				sim_array[4]=emailsim;
-				sim_array[5]=phsim;
+				sim_array[1]=addrsim;
+				sim_array[2]=emailsim;
+				sim_array[3]=phsim;
 				
 				String reason="";
 				//Yash: Final score calculation (address sim changed)
-				double ns,fns,mns,ads,ids;
+				double ns,fns,mns,ads,ids,ds,gs;
 				if(namesim2!=0)
 					ns=namesim2;
 				else
 					ns=namesim;
-				if(fnamesim2!=0)
-					fns=fnamesim2;
-				else	
-					fns=fnamesim;
-				if(mnamesim2!=0)
-					mns=mnamesim2;
-				else
-					mns=mnamesim;
 				if(addrsim2!=0)
 					ads=addrsim2;
 				else
@@ -817,120 +699,91 @@ public class TestCheck3
 					ids=idsim2;
 				else
 					ids=idsim;
+				if (dobsim2!=0)
+					ds=dobsim2;
+				else
+					ds=dobsim;
+				if (gendersim2!=0)
+					gs=gendersim2;
+				else
+					gs=gendersim;
 				
 				
-				
-				final_score=coeff_name*ns+coeff_fname*fns+coeff_mname*mns+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address2*ads+coeff_contact*phsim+coeff_id*ids;
-				System.out.println("*******************************************");
-				System.out.println("Name, address, email, phone, id components");
-				System.out.println("*******************************************");
-				//System.out.println(coeff_name);
-				System.out.println(coeff_name*ns);
-				//System.out.println(coeff_address2);
-				System.out.println(coeff_address2*ads);
-				//System.out.println(coeff_email);
-				System.out.println(coeff_email*emailsim);
-				//System.out.println(coeff_contact);
-				System.out.println(coeff_contact*phsim);
-				//System.out.println(coeff_id);
-				System.out.println(coeff_id*ids);
-				System.out.println("*******************************************");
-				if((namesim>0.85)&&(dobsim==1)&&(gendersim==1)&&(addrsim==0)&&(idsim==0)&&(fnamesim==0)&&(mnamesim==0)&&(emailsim==0)&&(phsim==0))
-				{
-					if(final_score>=relaxed_PM_threshold)
-					{	
-						final_label="1";
-						if(reason.equals(""))
-							reason="Relaxed match for Name, dob, gender"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
-						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-						
-					}
-				}
-				
+				final_score=coeff_name*ns+coeff_dob*ds+coeff_gender*gs+coeff_email*emailsim+coeff_address2*ads+coeff_contact*phsim+coeff_id*ids;
 				//final_score=coeff_name*namesim+coeff_fname*fnamesim+coeff_mname*mnamesim+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address2*addrsim+coeff_contact*phsim+coeff_id*idsim;
 				//Yash: If ID attributes don't match
 				if(idsim<1)
 				{
 					//If any of the strong ID attributes mismatch
-					if((pansim!=-0.5)||(aadhaarsim!=-0.5)||(ckycsim!=-0.5))
+					if(pansim!=-0.5)
 					{
 						//If at least two other attributes match (name must match)
 						if(doTwoAttrMatch(sim_array))
 						{
-							//Yash: Normalize score between minPM and maxPM
-							final_score=normalizeForPM(final_score,minPM,maxPM);
+							//Yash: Normalize score between PM min and max
+							final_score=normalizeForPM(final_score,min,max);
 						}
 					}
 					
 				}
 				//If ID attribute matches
 				else
-				{
-					norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
-					reason="id match"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
-				}
-							   
+					reason="id match";		   
 			    
 			    System.out.println("FINAL SCORE:");
 			    System.out.println(final_score);
 			    
-			    
+			    //Lower and upper bound for PM
+			    double minPM=4;
+			    double maxPM=7;
 			    if (final_score<=minPM)
 				{
 					final_label="X";
-					norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
 					//System.out.println("####");
 					if(reason.equals(""))
-						reason="Kinda nothing matches"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
-					fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-					System.out.println("NORMALIZED SCORE:");
-					System.out.println(norm_score);
+						reason="Kinda nothing matches"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
+					//fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
+					//System.out.println("Wrote to file 1");
 				}
 				else if (final_score>=maxPM)
 				{
 					final_label="1";
-					norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
 					if(reason.equals(""))
-						reason="Score above EM threshold"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
+						reason="Score above EM threshold"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
+					//System.out.println(reason);
+					//System.exit(0);
 					fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-					System.out.println("NORMALIZED SCORE:");
-					System.out.println(norm_score);
+					//System.out.println("Wrote to file 2");
 					
-				}
-			    
+				}	
 				else if ((final_score<maxPM) && (final_score>minPM)) 
 				{
 					
 					if((pansim<0.97) && (pansim!=-0.5))	//Change to idsim
 					{
 						final_label="0";
-						norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
 						if(reason.equals(""))
-							reason="Score between PM range, but ID not matching"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
+							reason="Score for PM, but ID not matching"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
+						
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-						System.out.println("NORMALIZED SCORE:");
-						System.out.println(norm_score);
+						//System.out.println("Wrote to file 3");
 					}
 					else if ((namesim<0.65))
 					{
 						final_label="X";	//partial match
-						norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
 						if(reason.equals(""))
-							reason="Score between PM range, but name not matching at all"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
-						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-						System.out.println("NORMALIZED SCORE:");
-						System.out.println(norm_score);
+							reason="Score for PM, but name not matching at all"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
+						//fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
+						//System.out.println("Wrote to file 4");
 					}
 					else
 					{
 						
 						final_label="0";
-						norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
 						if(reason.equals(""))
-							reason="Score between PM range, and not much problem with name/ID"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(norm_score);
+							reason="Score for PM, and not much problem with name/ID"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-						System.out.println("NORMALIZED SCORE:");
-						System.out.println(norm_score);
+						//System.out.println("Wrote to file 5");
 					}
 			    
 			    
@@ -938,53 +791,16 @@ public class TestCheck3
 				else
 				{
 					final_label="U";
-					norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
 					fio.writeToFile(line,String.valueOf(final_score),"U","UNKNOWN");
-					System.out.println("NORMALIZED SCORE:");
-					System.out.println(norm_score);
+					//System.out.println("Wrote to file 5");
 				}
-		    
-		
+			    
 			}
-		    else
-		    {
-		    	final_label="X";
-		    	norm_score = normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
-		    	fio.writeToFile(line,"0","X","DOB/Gender did not match");
-		    	System.out.println("NORMALIZED SCORE:");
-				System.out.println(norm_score);
-		    	//System.out.println("Wrote to file 6");
-		    }
-		    //System.out.println("FINAL LABEL PREDICTED:");
-		    //System.out.println(final_label);
-		    //System.out.println("FINAL LABEL ACTUAL:");
-		    //System.out.println(labels);
-		    if(final_label.equals(labels))
-		    {
-		    	//System.out.println("@@@");
-		    	acc=acc+1;
-		    }
-		    else if(final_label.equals("0")&&((labels.equals("1"))||(labels.equals("X"))))
-		    {
-		    	mismatch_cnt+=1;
-		    	//System.out.println();
-		    }
-		    else
-		    {
-		    	myWriter2.write(line+'\t'+String.valueOf(final_score)+'\t'+String.valueOf(final_label)+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim));
-		    }
-		    numlines+=1;
-		}
-		//System.out.println("Accuracy1:");
-		//System.out.println(acc);
-		double acc2=((double)acc/numlines)*100;
-		
-		//System.out.println(numlines);
-		//System.out.println("Accuracy:");
-		//System.out.println(acc2);
-		//System.out.println(numlines);
-		//System.out.println(mismatch_cnt);
-		myWriter2.close();
+				
 			
+		    System.out.println("FINAL LABEL PREDICTED:");
+		    System.out.println(final_label);
+		    
+		}			
 	}  
 }

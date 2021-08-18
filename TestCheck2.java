@@ -1,14 +1,14 @@
+package rootpack;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.language.DoubleMetaphone;
-
-
+import rootpack.Address;
 import com.wcohen.secondstring.Jaro;
 import com.wcohen.secondstring.StringWrapper;
 
@@ -23,8 +23,9 @@ class FileIO2
 		
 		try
 		{
-			FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa_output.tsv",true);
+			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa_output.tsv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/test_output.tsv",true);
+			FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_500.tsv",true);
 			myWriter.write(s1+'\t'+s2+'\t'+s3+'\t'+s4+'\n');
 			//System.out.println("Wrote to file");
 			myWriter.close();
@@ -156,7 +157,7 @@ class Similarity2
 	
 	public double findNameSim(String name1, String name2) 
 	{
-	    if(name1.toLowerCase()=="nan"|| name2.toLowerCase()=="nan")
+	    if(name1.toLowerCase().equals("nan")|| name2.toLowerCase().equals("nan"))
 	    {
 	        return -0.5;
 	    }
@@ -258,7 +259,9 @@ class Similarity2
 	public double findSim(String s1, String s2)
 	{
 		double tmp=-1;
-		if (s1.length()==0 || s2.length()==0)
+		System.out.println("OK");
+		System.out.println(s2.toLowerCase());
+		if ((s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na")))
 			return -0.5;
 		String[] l1 = s1.split(";");
 		String[] l2 = s2.split(";");
@@ -281,7 +284,7 @@ class Similarity2
 	public double findSim_phone(String s1, String s2)
 	{
 		double tmp=-1;
-		if (s1.length()==0 || s2.length()==0)
+		if (s1.length()==0 || s2.length()==0||s1.toLowerCase().equals("na")||s2.toLowerCase().equals("na"))
 			return -0.5;
 		//Phone numbers are separated by comma
 		String[] l1 = s1.split(",");
@@ -328,21 +331,36 @@ class Similarity2
 
 public class TestCheck2
 {
-	/*If two or more attributes have sim score above 0.9, return true*/
+	//Yash: Method to normalize scores between 4 and 9 (PM range) when one of the strong ID attributes mismatch
+	public static double normalizeForPM(double score,double min,double max)
+	{
+		//Find the normalized score between 0 and 1
+		double norm_score = (score-min)/(max-min);
+		//Multiply it with 9 (partial match upper limit)
+		double new_score = norm_score*9;
+		//Return it
+		return(new_score);
+	}
+	/*Yash: If two or more attributes have sim score above 0.97, return true*/
+	//Except dob, gender, and ID
 	public static boolean doTwoAttrMatch(double sim_array[])
 	{
 		int count_match=0,i;
-		//double coeff_array[]=new double[sim_array.length];
-		for (i = 0; i < sim_array.length; i++)
+		if (sim_array[0]>=0.85)	//Yash: If name matches, see if at least another attribute matches or not
 		{
-			if((sim_array[i]>0.97)&&(sim_array[i]!=-0.5))
+			
+			count_match=1;
+			for (i = 1; i < sim_array.length; i++)
 			{
-				count_match=count_match+1;
-				//Make coefficients of matching attributes 5
-				//coeff_array[i]=5;
+				//We keep the match threshold very high here (0.97) since this block is executed when there is an ID mismatch
+				if((sim_array[i]>0.97)&&(sim_array[i]!=-0.5))
+				{
+					count_match=count_match+1;
+					//Make coefficients of matching attributes 5
+					//coeff_array[i]=5;
+				}
 			}
 		}
-		
 		if(count_match>=2)
 			return true;
 		return false;
@@ -357,12 +375,18 @@ public class TestCheck2
 		double final_score=0;
 		double sim_array[]=new double[50];
 		double coeff_array[]=new double[50];
-		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa.tsv"));  
+		double max=33, min=-16;
+		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/dedupe_test_cases_bhartiAxa.tsv"));  
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/test.csv"));
+		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/final_test_set_500.csv"));
+		
 		String line="";
 		int linecount=0;
 		
 		String final_label="X";
+		
+		//Create output file to write special cases (not required in main implementation)
+		FileWriter myWriter2 = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_nonmatch_500.tsv");
 		while ((line = br.readLine()) != null)   //returns a Boolean value  
 		//while (sc.hasNext())  //returns a boolean value  
 		{  
@@ -418,7 +442,7 @@ public class TestCheck2
 		    //System.out.println(dob_right);
 		    double dobsim = s.findSim(dob_left,dob_right);
 		    double gendersim = s.findSim(gender_left,gender_right);
-		    double addrsim = s.findSim(addresses_left,addresses_right);
+		    //double addrsim = s.findSim(addresses_left,addresses_right);
 		    double pansim = s.findSim(pan_left,pan_right);
 		    double voteridsim = s.findSim(voterid_left,voterid_right);
 		    double passportsim = s.findSim(passport_left,passport_right);
@@ -428,6 +452,12 @@ public class TestCheck2
 		    double eiasim = s.findSim(eia_left,eia_right);
 		    double emailsim = s.findSim(email_left,email_right);
 		    double phsim = s.findSim_phone(contactnumbers_left,contactnumbers_right);
+		    //Updated Address Matcher
+		    double addrsim = Address.findAddSim(addresses_left,addresses_right);
+		    
+		    
+		    
+		    
 		    double idsim=0;
 		   //System.out.println(dobsim);
 		   //System.out.println(gendersim);
@@ -485,10 +515,10 @@ public class TestCheck2
 						
 						if (namesim!=-0.5)
 						{
-							//If the first name matches and the namelists are subset of each other, increase the name coefficient and similarity
-							if((firstname_left.equals(firstname_right)) &&(nameset_left.containsAll(nameset_right)||nameset_right.containsAll(nameset_left)))
+							//Yash: If the namelists are subset of each other, increase the name coefficient and similarity
+							if((nameset_left.containsAll(nameset_right)||nameset_right.containsAll(nameset_left)))
 							{
-								namesim=0.85;
+								namesim=0.85;//Yash
 								coeff_name=3;
 							}
 							//If the first name is a single alphabet, and abbreviations and last name match, increase name coefficient and similarity
@@ -496,7 +526,7 @@ public class TestCheck2
 							{
 								if (lastname_left.equals(lastname_right))
 								{
-									namesim=0.85;
+									namesim=0.85;//Yash
 									coeff_name=3;
 								}
 							}
@@ -505,43 +535,27 @@ public class TestCheck2
 							{
 								if (firstname_left.equals(firstname_right))
 								{
-									namesim=0.85;
+									namesim=0.85;//Yash
 									coeff_name=3;
 								}
 							}
 							else
 								coeff_name=-4;
-							/*
-							//If namesim < 0.65, negative
-							else if (namesim<0.65 && namesim!=-0.5)
-								coeff_name=-4;
-							//If namesim between 0.65 and 0.85
-							else if ((namesim>=0.65)&&(namesim<0.85))
-							{
-								//If abbreviations are subset of each other, no contribution
-								if (s.doAbbrvMatch(fullname_left,fullname_right))
-									coeff_name=0;
-								//Else negative
-								else 
-								{
-									coeff_name=-4;
-									//System.exit(0);
-								}
-							}*/
+							
 						}
 						else
 							coeff_name=0;
 					}
 				}
 				/************************************************************/
-				//Address match
+				//Yash: Address match
 				/***********************************************************/
-				if (addrsim>0.95)	//Same house
+				/*if (addrsim>0.95)	//Same house
 					coeff_address=2;
 				else if (addrsim<=0.95 && addrsim!=-0.5)
 					coeff_address=-1;	//Changed address
 				else
-					coeff_address=0;
+					coeff_address=0;*/
 				//Address2 coeff
 				if (addrsim>0.7)	//Same house
 					coeff_address2=2;
@@ -555,7 +569,7 @@ public class TestCheck2
 				if (phsim==1)
 				{
 					coeff_contact=5;	//Parents' phone number
-					coeff_name=5;	//Phone is a strong attribute. Hence, increasing name weight.
+					coeff_name=5;	//Yash: Phone is a strong attribute. Hence, increasing name weight.
 				}
 				else
 					coeff_contact=0;	//Multiple contacts
@@ -602,18 +616,19 @@ public class TestCheck2
 					coeff_mname=0;
 				
 				/************************************************************/
-				//ID attribute match
+				//Yash: ID attribute match
 				/***********************************************************/
 				//If any one ID matches, high contribution
 				if(pansim==1 || passportsim==1 || voteridsim==1 || ckycsim==1 || aadhaarsim==1 || drivinglicencesim==1 || eiasim==1)
 				{
 					idsim=1;
 					coeff_id=10;	//Strong influence if any ID attribute matches
-					coeff_name=5;	//Force increase name coefficient
+					coeff_name=5;	//Yash: Force increase name coefficient
 				}
 				//If no ID attributes are present
 				else if ((pansim==-0.5)&& passportsim==-0.5 && voteridsim==-0.5 && ckycsim==-0.5 && aadhaarsim==-0.5 && drivinglicencesim==-0.5 && eiasim==-0.5)
 				{
+					System.out.println("HERE1");
 					idsim=0;
 					coeff_id=0;
 				}
@@ -623,33 +638,34 @@ public class TestCheck2
 					//Take the strongest ID similarity as idsim (needs to be modified)
 					if(pansim!=-0.5)
 					{
-						idsim=(1-pansim);
+						System.out.println("HERE2");
+						idsim=(1-pansim);//Yash
 						coeff_id=-5;
 					}
 					else if(aadhaarsim!=-0.5)
 					{
-						idsim=(1-aadhaarsim);
+						idsim=(1-aadhaarsim);//Yash
 						coeff_id=-5;
 					}
 					else if(ckycsim!=-0.5)
 					{
-						idsim=(1-ckycsim);
+						idsim=(1-ckycsim);//Yash
 						coeff_id=-5;
 					}
 					else if(drivinglicencesim!=-0.5)
 					{
-						idsim=(1-drivinglicencesim);
+						idsim=(1-drivinglicencesim);//Yash
 						coeff_id=0;	//Multiple driving licences might be there
 					}
 					else if(passportsim!=-0.5)
 					{
-						idsim=(1-passportsim);
+						idsim=(1-passportsim);//Yash
 						coeff_id=0;	//Multiple passports might be there
 					}
 					
 					else
 					{
-						idsim=(1-voteridsim);
+						idsim=(1-voteridsim);//Yash
 						coeff_id=0;	//Multiple voter IDs might be there
 					}
 					
@@ -660,7 +676,7 @@ public class TestCheck2
 				if (emailsim==1)
 				{
 					coeff_email=5;	//Sometimes wife provides husband's email
-					coeff_name=5; //Email is a strong attribute. So, increasing name weight as well.
+					coeff_name=5; //Yash: Email is a strong attribute. So, increasing name weight as well.
 				}
 				else if (emailsim<=0.9 && emailsim!=-0.5)
 					coeff_email=0;
@@ -677,7 +693,7 @@ public class TestCheck2
 				System.out.println(phsim);
 				
 				/**************************************************************************************/
-				/*Calculating final score*/
+				/*Yash: Calculating final score*/
 				/**************************************************************************************/
 				sim_array[0]=namesim;
 				sim_array[1]=fnamesim;
@@ -688,45 +704,26 @@ public class TestCheck2
 				sim_array[5]=phsim;
 				
 				String reason="";
-				//If ID attributes don't match
+				//Yash: Final score calculation (address sim changed)
+				final_score=coeff_name*namesim+coeff_fname*fnamesim+coeff_mname*mnamesim+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address2*addrsim+coeff_contact*phsim+coeff_id*idsim;
+				//Yash: If ID attributes don't match
 				if(idsim<1)
 				{
-					//If at least two attributes match
-					if(doTwoAttrMatch(sim_array))
+					//If any of the strong ID attributes mismatch
+					if((pansim!=-0.5)||(aadhaarsim!=-0.5)||(ckycsim!=-0.5))
 					{
-						//Make the matching coefficients 5 forcefully
-						for (int i = 0; i < sim_array.length; i++)
+						//If at least two other attributes match (name must match)
+						if(doTwoAttrMatch(sim_array))
 						{
-							if(sim_array[i]!=-0.5)	
-								final_score+=5*sim_array[i];
-								
+							//Yash: Normalize score between 4 and 9
+							final_score=normalizeForPM(final_score,min,max);
 						}
-						final_score=final_score+coeff_dob*dobsim+coeff_gender*gendersim+coeff_id*idsim;
-						//System.out.println("FINAL SCORE (after ID non-match):");
-						//System.out.println(final_score);
-					}
-					else
-					{
-						final_score=coeff_name*namesim+coeff_fname*fnamesim+coeff_mname*mnamesim+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address*addrsim+coeff_contact*phsim+coeff_id*idsim;
 					}
 					
-					//String reason="ID no match. But two attributes match.";
 				}
+				//If ID attribute matches
 				else
-				{
-					//Final score calculation
-					//final_score=coeff_name*namesim+coeff_fname*fnamesim+coeff_mname*mnamesim+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address*addrsim+coeff_address2*addrsim2+coeff_contact*phsim+coeff_id*idsim;
-					//Final score without pin
-					reason="id match";
-					final_score=coeff_name*namesim+coeff_fname*fnamesim+coeff_mname*mnamesim+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address*addrsim+coeff_contact*phsim+coeff_id*idsim;
-					
-					//System.out.println("FINAL SCORE:"+final_score);
-				}
-				
-						    
-			    //Write final score and labels in file based on conditions	
-			   
-			   
+					reason="id match";		   
 			    
 			    System.out.println("FINAL SCORE:");
 			    System.out.println(final_score);
@@ -752,7 +749,7 @@ public class TestCheck2
 				else if ((final_score<9) && (final_score>4)) 
 				{
 					
-					if((pansim<0.97) && (pansim!=-0.5))
+					if((pansim<0.97) && (pansim!=-0.5))	//Change to idsim
 					{
 						final_label="0";
 						if(reason.equals(""))
@@ -762,7 +759,7 @@ public class TestCheck2
 					}
 					else if ((namesim<0.65))
 					{
-						final_label="X";
+						final_label="X";	//partial match
 						if(reason.equals(""))
 							reason="Score between [4,9], but name not matching at all";
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
@@ -804,6 +801,10 @@ public class TestCheck2
 		    	//System.out.println("@@@");
 		    	acc=acc+1;
 		    }
+		    else
+		    {
+		    	myWriter2.write(line+'\t'+String.valueOf(final_score)+'\t'+String.valueOf(final_label)+'\n');
+		    }
 		    numlines+=1;
 		}
 		//System.out.println("Accuracy1:");
@@ -813,6 +814,7 @@ public class TestCheck2
 		//System.out.println(numlines);
 		System.out.println("Accuracy:");
 		System.out.println(acc2);
+		myWriter2.close();
 			
 	}  
 }
