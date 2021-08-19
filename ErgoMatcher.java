@@ -22,7 +22,7 @@ class FileIO5
 		
 		try
 		{
-			FileWriter myWriter = new FileWriter("/home/guddu/Lumiq/Ergo/Ergo_test_output.csv",true);
+			FileWriter myWriter = new FileWriter("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2_output.csv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/test_output.tsv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_500s.tsv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_with_percentage.tsv",true);
@@ -47,6 +47,7 @@ public class ErgoMatcher
 		int coeff_id=0,coeff_address2,coeff_email,coeff_name=0,coeff_contact, coeff_dob, coeff_gender,numlines=0, acc=0;
 		int coeff_city=0,coeff_state=0,coeff_pin=0,coeff_chassis=0, coeff_reg=0;
 		double final_score=0;
+		double gendersim;
 		double sim_array[]=new double[50];
 		//max_fs and min_fs are the maximum and minimum values of final_score; minPM and maxPM are the lower and upper limits of PM; norm_score is the normalized score
 		double max_fs=37, min_fs=-4,minPM=8,maxPM=10,norm_score=0;
@@ -55,7 +56,7 @@ public class ErgoMatcher
 		/*User to specify relaxed threshold for EM, for name,dob,and gender match*/
 		double relaxed_PM_threshold=4;
 		
-		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/Ergo_test_data.csv"));  
+		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2.csv"));  
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/test.csv"));
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/final_test_set.csv"));
 		
@@ -129,7 +130,14 @@ public class ErgoMatcher
 			    //Find similarity between pairs of attributes
 			    double namesim = NameMatcher.findNameSim(fullname_left,fullname_right);
 			    double dobsim = JaroSimilarity.findSim(dob_left,dob_right);
-			    double gendersim = JaroSimilarity.findSim(gender_left,gender_right);
+			    double gendersimilarity = JaroSimilarity.findSim(gender_left,gender_right);
+			    
+			    //If gendersimilarity is above 0.8, there is a spelling mistake may be. Hence, gendersim
+			    //is the direct Jaro score. Else, the genders are different actually.
+			    if(gendersimilarity>0.8)
+			    	gendersim=gendersimilarity;
+			    else
+			    	gendersim=0;
 			    //Updated Address Matcher
 			    double addrsim = Address.findAddSim(addresses_left,addresses_right);
 			    double pinsim = JaroSimilarity.findSim(pin_left,pin_right);
@@ -386,6 +394,8 @@ public class ErgoMatcher
 				System.out.println(coeff_id*idsim);
 				System.out.println(chassissim);
 				System.out.println("*******************************************");
+				
+				//Yash: Here, we allow the user to decide if it's an exact match, in case only the name, dob, and gender match.
 				if((namesim>0.85)&&(dobsim==1)&&(gendersim==1)&&(addrsim==0)&&(idsim==0)&&(emailsim==0)&&(phsim==0))
 				{
 					if(final_score>=relaxed_PM_threshold)
@@ -439,13 +449,26 @@ public class ErgoMatcher
 				}
 				else if (final_score>=maxPM)
 				{
-					final_label="1";
-					norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
-					if(reason.equals(""))
-						reason="Score above EM threshold"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
-					fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
-					System.out.println("NORMALIZED SCORE:");
-					System.out.println(norm_score);
+					if ((namesim<0.65))
+					{
+						final_label="0"; //Yash: Forcing it to be a PM because name is severely mismatching
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
+						if(reason.equals(""))
+							reason="Score above EM threshold, but name not matching at all"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
+						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
+						System.out.println("NORMALIZED SCORE:");
+						System.out.println(norm_score);
+					}
+					else
+					{
+						final_label="1";
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
+						if(reason.equals(""))
+							reason="Score above EM threshold"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
+						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
+						System.out.println("NORMALIZED SCORE:");
+						System.out.println(norm_score);
+					}
 					
 				}
 			    
@@ -464,7 +487,7 @@ public class ErgoMatcher
 					}
 					else if ((namesim<0.65))
 					{
-						final_label="X";	//partial match
+						final_label="X";
 						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
 						if(reason.equals(""))
 							reason="Score between PM range, but name not matching at all"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
