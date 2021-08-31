@@ -22,7 +22,8 @@ class FileIO5
 		
 		try
 		{
-			FileWriter myWriter = new FileWriter("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2_output.csv",true);
+			FileWriter myWriter = new FileWriter("/home/guddu/Lumiq/Ergo/Ergo_Aug19_test2_output.csv",true);
+			//FileWriter myWriter = new FileWriter("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2_output.csv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/test_output.tsv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_500s.tsv",true);
 			//FileWriter myWriter = new FileWriter("/home/guddu/Dedupe_anirban/final_test_set_output_with_percentage.tsv",true);
@@ -45,18 +46,19 @@ public class ErgoMatcher
 	throws Exception
 	{
 		int coeff_id=0,coeff_address2,coeff_email,coeff_name=0,coeff_contact, coeff_dob, coeff_gender,numlines=0, acc=0;
-		int coeff_city=0,coeff_state=0,coeff_pin=0,coeff_chassis=0, coeff_reg=0;
+		int coeff_city=0,coeff_state=0,coeff_pin=0,coeff_chassis=0, coeff_reg=0; //Yash
 		double final_score=0;
 		double gendersim;
 		double sim_array[]=new double[50];
 		//max_fs and min_fs are the maximum and minimum values of final_score; minPM and maxPM are the lower and upper limits of PM; norm_score is the normalized score
-		double max_fs=37, min_fs=-4,minPM=8,maxPM=10,norm_score=0;
+		double max_fs=37, min_fs=-4,minPM=6,maxPM=10,norm_score=0; //norm_score=Final Percentage
 		//The threshold defined by the team to calculate the percentages (0 to 50 is no match, 50 to 75 is partial match, etc.)
 		double thr1=0,thr2=70,thr3=90,thr4=100;
 		/*User to specify relaxed threshold for EM, for name,dob,and gender match*/
 		double relaxed_PM_threshold=4;
 		
-		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2.csv"));  
+		BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/Ergo_Aug19_test2.csv"));
+		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/Ergo_pairs_test2.csv"));  
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Lumiq/Ergo/test.csv"));
 		//BufferedReader br = new BufferedReader(new FileReader("/home/guddu/Dedupe_anirban/final_test_set.csv"));
 		
@@ -81,6 +83,7 @@ public class ErgoMatcher
 			
 				linecount+=1;
 				//System.out.println(linecount);
+				//Yash: Padding
 				String[] l1 = line.split("\t");
 				List<String> l = new ArrayList<>(Arrays.asList(l1));
 				System.out.println(l.size());
@@ -92,7 +95,19 @@ public class ErgoMatcher
 				}
 					
 				//System.out.println(l);
-	
+				
+				//Anirban: new cases (to be handled later)
+				//Left gender!=right gender: PM (if name and ID completely match, it is EM currently. If name does not match well, then no match currently.)
+				//Left dob!=right dob: PM (if name and ID completely match, it is EM currently. If name does not match well, then no match currently.)
+				//Only ID and name are present, and name mismatches fully, but ID exact match: PM
+				//Only name and Chassis match (all other mismatch or null): EM? PM?
+				//Name, Email, Phone match: Cannot be EM in Ergo
+				//ID matches, name does not match at all, no other attr present: PM? NM?
+				//Name, dob, gender match; nothing else matches: PM?
+				//Name and address match; nothing else matches: PM?
+				
+				
+				
 				//Left tuple
 				String policynum_left=l.get(0).replace("\n", "").replace("\r", "");		    
 				String customercode_left=l.get(1).replace("\n", "").replace("\r", "");		
@@ -154,7 +169,7 @@ public class ErgoMatcher
 			    
 			    
 			    /************************************************************/
-				//DOB and GENDER
+				//DOB and GENDER: Yash
 				/***********************************************************/
 				if(dobsim==1)
 					coeff_dob=1;
@@ -202,7 +217,7 @@ public class ErgoMatcher
 							}
 							else
 							{
-								namesim2 = 1-namesim;
+								namesim2 = 1-namesim;	//Yash
 								coeff_name=-4;
 							}
 						}
@@ -241,7 +256,7 @@ public class ErgoMatcher
 							}
 							else
 							{
-								namesim2=1-namesim;
+								namesim2=1-namesim;	//Yash
 								coeff_name=-4;
 							}
 								
@@ -287,7 +302,7 @@ public class ErgoMatcher
 				/************************************************************/
 				//Chassis number match
 				/***********************************************************/
-				if (chassissim==1)
+				if (chassissim==1)	//Anirban: Might change
 					coeff_chassis=2;
 				else
 					coeff_chassis=0;	//Multiple chassis numbers can be there with one person
@@ -303,10 +318,10 @@ public class ErgoMatcher
 				/************************************************************/
 				//Phone match
 				/***********************************************************/
-				if (phsim==1)
+				if (phsim==1)	//Anirban: Note down
 				{
 					coeff_contact=5;	//Parents' phone number
-					if(namesim>=0.7)
+					if(namesim>=0.7)	//Yash
 					{
 						namesim2=0;
 						coeff_name=5;
@@ -321,10 +336,10 @@ public class ErgoMatcher
 				/***********************************************************/
 				//If any one ID matches, high contribution
 				double idsim=pansim;
-				if(idsim==1)
+				if(idsim==1)	//Note: should Chassis Number be considered too?
 				{
 					coeff_id=10;	//Strong influence if any ID attribute matches
-					if(namesim>=0.7)
+					if(namesim>=0.7)	//Yash
 					{
 						namesim2=0;
 						coeff_name=5;
@@ -339,10 +354,10 @@ public class ErgoMatcher
 				/************************************************************/
 				//Email match
 				/***********************************************************/
-				if (emailsim==1)
+				if (emailsim==1)//Anirban: Note down
 				{
 					coeff_email=5;	//Sometimes wife provides husband's email
-					if(namesim>=0.7)
+					if(namesim>=0.7)	//Yash
 					{
 						namesim2=0;
 						coeff_name=5;
@@ -368,7 +383,7 @@ public class ErgoMatcher
 				String reason="";
 				//Yash: Final score calculation (address sim changed)
 				//For negative contribution attributes, do (1-sim) for a certain threshold
-				double ns,ids;
+				double ns;	//Yash
 				if(namesim2!=0)
 					ns=namesim2;
 				else
@@ -379,6 +394,7 @@ public class ErgoMatcher
 				
 				final_score=coeff_name*ns+coeff_dob*dobsim+coeff_gender*gendersim+coeff_email*emailsim+coeff_address2*addrsim+coeff_contact*phsim+coeff_id*idsim+coeff_city*citysim+coeff_state*statesim+coeff_pin*pinsim+
 				coeff_reg*regsim+coeff_chassis*chassissim;
+				
 				System.out.println("****************************************************");
 				System.out.println("Name, address, email, phone, id, chassis components");
 				System.out.println("****************************************************");
@@ -400,7 +416,7 @@ public class ErgoMatcher
 				{
 					if(final_score>=relaxed_PM_threshold)
 					{	
-						final_label="1";
+						final_label="1";	//Yash: To make it PM
 						if(reason.equals(""))
 							reason="Relaxed match for Name, dob, gender"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
@@ -425,6 +441,7 @@ public class ErgoMatcher
 					
 				}
 				//If ID attribute matches
+				//Yash to check whole block
 				else
 				{
 					norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
@@ -439,7 +456,7 @@ public class ErgoMatcher
 			    if (final_score<=minPM)
 				{
 					final_label="X";
-					norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
+					norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);	//Yash
 					//System.out.println("####");
 					if(reason.equals(""))
 						reason="Kinda nothing matches"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
@@ -449,8 +466,9 @@ public class ErgoMatcher
 				}
 				else if (final_score>=maxPM)
 				{
-					if ((namesim<0.65))
+					if ((namesim<0.65))	//Yash
 					{
+						final_score=Helper.normalizeForPM(final_score,minPM,maxPM);	//Yash
 						final_label="0"; //Yash: Forcing it to be a PM because name is severely mismatching
 						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
 						if(reason.equals(""))
@@ -462,7 +480,7 @@ public class ErgoMatcher
 					else
 					{
 						final_label="1";
-						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4);
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr3,thr4); //Yash
 						if(reason.equals(""))
 							reason="Score above EM threshold"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
@@ -478,7 +496,7 @@ public class ErgoMatcher
 					if((pansim<0.97) && (pansim!=-0.5))	//Change to idsim
 					{
 						final_label="0";
-						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3); //Yash
 						if(reason.equals(""))
 							reason="Score between PM range, but ID not matching"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
@@ -488,7 +506,7 @@ public class ErgoMatcher
 					else if ((namesim<0.65))
 					{
 						final_label="X";
-						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr1,thr2);	//Yash
 						if(reason.equals(""))
 							reason="Score between PM range, but name not matching at all"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
@@ -499,7 +517,7 @@ public class ErgoMatcher
 					{
 						
 						final_label="0";
-						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);
+						norm_score = Helper.normalizeFinalScore(final_score,min_fs,max_fs,thr2,thr3);	//Yash
 						if(reason.equals(""))
 							reason="Score between PM range, and not much problem with name/ID"+'\t'+String.valueOf(dobsim)+'\t'+String.valueOf(gendersim)+'\t'+String.valueOf(namesim)+'\t'+String.valueOf(emailsim)+'\t'+String.valueOf(phsim)+'\t'+String.valueOf(addrsim)+'\t'+String.valueOf(pinsim)+'\t'+String.valueOf(citysim)+'\t'+String.valueOf(statesim)+'\t'+String.valueOf(regsim)+'\t'+String.valueOf(chassissim)+'\t'+String.valueOf(norm_score);
 						fio.writeToFile(line,String.valueOf(final_score),String.valueOf(final_label),reason);
