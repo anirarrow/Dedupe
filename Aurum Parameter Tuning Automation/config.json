@@ -1,0 +1,13 @@
+[{"attribute": "fullname", "type": "name", "category": ["Non-ID","Top-tier","Single-valued"], "reliability": 1},
+{"attribute": "dob", "type": "other", "category": ["Non-ID","Top-tier","Single-valued"], "reliability": 0},
+{"attribute": "gender", "type": "other", "category": ["Non-ID","Top-tier","Single-valued"], "reliability": 0},
+{"attribute": "chassisnum", "type": "other", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+{"attribute": "regnum", "type": "other", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+{"attribute": "contactnumbers", "type": "other", "category": ["Non-ID","Top-tier","Multi-valued"], "reliability": 0},
+{"attribute": "email", "type": "identity", "category": ["ID","Top-tier","Multi-valued"], "reliability": 0},
+{"attribute": "pan", "type": "identity", "category": ["ID","Top-tier","Single-valued"], "reliability": 0},
+{"attribute": "pin", "type": "address", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+{"attribute": "city", "type": "address", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+{"attribute": "state", "type": "address", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+{"attribute": "addresses", "type": "address", "category": ["Non-ID","Bottom-tier","Multi-valued"], "reliability": 1},
+]
